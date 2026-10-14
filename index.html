@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Simulatore di mutuo prima casa per Roma nord: rata, spese, prezzo massimo approvabile, zone e offerte delle banche.">
+<meta name="theme-color" content="#F2F3EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121614" media="(prefers-color-scheme: dark)">
+<title>Mutuo Roma Nord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: colonna unica da ~1080px, barra di navigazione fissa in alto, simulatore a due colonne (controlli | risultati) che si impila su telefono */
+:root{
+  --bg:#F2F3EF; --surface:#FFFFFF; --surface-2:#E8EAE4; --line:#D5D8CF;
+  --ink:#1A211E; --muted:#5D6660;
+  --accent:#28468F; --accent-soft:#DCE3F4;
+  --ochre:#B07B22; --ochre-soft:#F1E3C6;
+  --ok:#2F7D4F; --ok-soft:#DCEFE2; --warn:#B9770E; --warn-soft:#F6E7C8; --bad:#B63A26; --bad-soft:#F5DAD4;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body:"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1A201D; --surface-2:#232A26; --line:#323B36;
+  --ink:#E8ECE7; --muted:#9AA59E;
+  --accent:#8EA8EC; --accent-soft:#25304D;
+  --ochre:#D9A74E; --ochre-soft:#3A2F1A;
+  --ok:#6CC28F; --ok-soft:#1D3527; --warn:#E3AE4F; --warn-soft:#3B3019; --bad:#EE8571; --bad-soft:#41231E;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1A201D; --surface-2:#232A26; --line:#323B36;
+  --ink:#E8ECE7; --muted:#9AA59E;
+  --accent:#8EA8EC; --accent-soft:#25304D;
+  --ochre:#D9A74E; --ochre-soft:#3A2F1A;
+  --ok:#6CC28F; --ok-soft:#1D3527; --warn:#E3AE4F; --warn-soft:#3B3019; --bad:#EE8571; --bad-soft:#41231E;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;overflow-x:hidden}
+a{color:var(--accent);overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:max(20px,env(safe-area-inset-left));padding-block:0 64px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+
+/* nav */
+nav.top{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.top .in{max-width:1080px;margin:0 auto;padding-inline:20px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav.top .in::-webkit-scrollbar{display:none}
+nav.top a{flex:none;text-decoration:none;color:var(--muted);font-size:.85rem;font-weight:500;padding:12px 10px;border-bottom:2px solid transparent}
+nav.top a:hover,nav.top a.on{color:var(--ink);border-bottom-color:var(--accent)}
+
+section{padding-top:56px;scroll-margin-top:56px;display:grid;gap:20px}
+.lead{max-width:65ch;color:var(--muted)}
+
+/* hero */
+.hero{padding-top:40px;display:grid;gap:22px;scroll-margin-top:56px}
+.hero h1{font-size:clamp(2rem,5.5vw,3.4rem);font-weight:800;letter-spacing:-.02em;max-width:18ch}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.verdict{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.verdict>div{background:var(--surface);padding:16px 18px;display:grid;gap:4px;min-width:0;align-content:start}
+.verdict .v{font-family:var(--f-display);font-size:1.6rem;font-weight:700}
+.verdict .d{font-size:.82rem;color:var(--muted)}
+.profile{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink)}
+.chip i{flex:none;width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--ok)}
+.chip.w i{background:var(--warn)} .chip.b i{background:var(--bad)}
+.callout{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:16px 18px;display:grid;gap:6px;max-width:80ch}
+.callout.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:var(--warn-soft)}
+.callout.info{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-soft)}
+
+/* simulator */
+.sim{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:grid;gap:18px;min-width:0}
+.ctl{display:grid;gap:6px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ctl label{font-weight:600;font-size:.9rem}
+.ctl output{font-family:var(--f-mono);font-weight:500;color:var(--accent)}
+.ctl .hint{font-size:.78rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0;touch-action:pan-y}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:.82rem;padding:6px 11px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;touch-action:manipulation}
+.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
+.check input{flex:none;margin-top:4px;accent-color:var(--accent)}
+
+.status{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--r);background:var(--ok-soft)}
+.status.w{background:var(--warn-soft)} .status.b{background:var(--bad-soft)}
+.status .dot{flex:none;width:14px;height:14px;border-radius:50%;background:var(--ok)}
+.status.w .dot{background:var(--warn)} .status.b .dot{background:var(--bad)}
+.status b{font-family:var(--f-display);font-size:1.05rem}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kpi{display:grid;gap:2px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-size:1.45rem;font-weight:700;white-space:nowrap}
+.kpi .l{font-size:.78rem;color:var(--muted)}
+.gauge{display:grid;gap:6px}
+.gauge .row{display:flex;justify-content:space-between;gap:4px 10px;flex-wrap:wrap}
+.gbar{position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ok) 0 55%,var(--warn) 55% 66.7%,var(--bad) 66.7% 100%);opacity:.85}
+.gmark{position:absolute;top:-5px;width:4px;height:22px;border-radius:2px;background:var(--ink);transform:translateX(-50%);transition:left .25s}
+.gscale{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);font-family:var(--f-mono)}
+.stack{display:flex;height:34px;border-radius:7px;overflow:hidden;background:var(--surface-2)}
+.stack>div{height:100%;transition:width .25s;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{flex:none;width:10px;height:10px;border-radius:2px;display:inline-block}
+.maxbox{border-top:1px dashed var(--line);padding-top:14px;display:grid;gap:4px}
+
+svg{display:block;max-width:100%}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+svg .gl{stroke:var(--line);stroke-width:1}
+.chartbox{min-width:0}
+
+/* scenarios */
+.scen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:10px;align-content:start;text-align:left;font:inherit;color:inherit;cursor:pointer;position:relative;touch-action:manipulation}
+.sc:hover{border-color:var(--accent)}
+.sc.rec{border:2px solid var(--accent)}
+.sc[disabled]{cursor:default;opacity:.7}
+.sc .tag{justify-self:start;font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:999px}
+.sc .price{font-family:var(--f-display);font-size:1.7rem;font-weight:800}
+.sc dl{display:grid;grid-template-columns:auto auto;gap:4px 12px;margin:0;font-size:.85rem}
+.sc dt{color:var(--muted)} .sc dd{margin:0;text-align:right;font-family:var(--f-mono)}
+.sc .go{font-size:.8rem;color:var(--accent);font-weight:600}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right;white-space:nowrap}
+tfoot td{font-weight:600}
+
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+
+/* banks */
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.banks{display:grid;gap:12px}
+.bank{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 20px}
+.bank .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.bank .rank{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.bank h3{font-size:1.05rem}
+.badge{font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)} .b-w{background:var(--warn-soft);color:var(--warn)} .b-o{background:var(--bad-soft);color:var(--bad)}
+.b-g{background:var(--surface-2);color:var(--muted)}
+.bank .figs{display:flex;gap:18px;text-align:right}
+.bank .figs div{display:grid}
+.bank .figs .v{font-family:var(--f-display);font-weight:700;font-size:1.2rem}
+.bank .figs .l{font-size:.72rem;color:var(--muted)}
+.bank ul{margin:0;padding-left:18px;font-size:.86rem;color:var(--muted);display:grid;gap:2px;grid-column:1/-1}
+.bank .links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.85rem}
+
+/* steps */
+.phase{display:grid;gap:10px}
+.steps{display:grid;gap:8px}
+.step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;cursor:pointer}
+.step input{width:18px;height:18px;margin-top:3px;accent-color:var(--ok)}
+.step.done{opacity:.6}
+.step.done b{text-decoration:line-through}
+.step p{font-size:.86rem;color:var(--muted)}
+.progress{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.progress>div{height:100%;background:var(--ok);transition:width .25s}
+.docs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.docs .panel{gap:8px}
+.docs ul{margin:0;padding-left:18px;font-size:.88rem;display:grid;gap:4px}
+.sources{columns:2;column-gap:28px;font-size:.85rem;padding-left:18px}
+.sources li{break-inside:avoid;margin-bottom:4px}
+footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted);display:grid;gap:6px}
+
+@media (max-width:860px){
+  .sim,.two{grid-template-columns:minmax(0,1fr)}
+  .verdict{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scen,.docs{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  body{font-size:14.5px}
+  .wrap,nav.top .in{padding-inline:16px}
+  nav.top a{padding:12px 8px}
+  section{padding-top:44px;gap:16px}
+  .hero{padding-top:28px;gap:18px}
+  .panel{padding:16px;gap:16px}
+  .verdict>div{padding:12px 14px}
+  .verdict .v{font-size:1.25rem}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+  .kpi .v{font-size:1.2rem}
+  .seg button{padding:9px 12px;font-size:.85rem}
+  .filters{gap:10px}
+  .bank{grid-template-columns:minmax(0,1fr);padding:14px}
+  .bank .figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:left}
+  .bank .figs .v{font-size:1.05rem}
+  .sc{padding:16px}
+  .sc .price{font-size:1.5rem}
+  th,td{padding:9px 10px}
+  .sources{columns:1}
+}
+@media (pointer:coarse){
+  input[type=range]{height:32px}
+  .check input{width:20px;height:20px;margin-top:1px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="Sezioni">
+  <div class="in">
+    <a href="#riepilogo">Riepilogo</a>
+    <a href="#simulatore">Simulatore</a>
+    <a href="#scenari">Scenari</a>
+    <a href="#spese">Spese</a>
+    <a href="#zone">Zone</a>
+    <a href="#tasso">Fisso o variabile</a>
+    <a href="#banche">Banche</a>
+    <a href="#piano">Piano d'azione</a>
+    <a href="#documenti">Documenti</a>
+    <a href="#fonti">Fonti</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero" id="riepilogo">
+  <div class="eyebrow">Prima casa · Roma nord · dati al 14 ottobre 2026</div>
+  <h1>Quanta casa puoi permetterti a <em>Roma nord</em>?</h1>
+  <p class="lead">Inserisci stipendio e risparmi nel simulatore: vedi la rata, le spese, il prezzo massimo che una banca ti approva e quanti metri quadri compri tra Porta di Roma e Settebagni.</p>
+  <div class="verdict" aria-live="polite">
+    <div><span class="eyebrow">Prezzo massimo</span><span class="v num" id="h-max"></span><span class="d">Con buona probabilità di approvazione</span></div>
+    <div><span class="eyebrow">Mutuo</span><span class="v num" id="h-loan"></span><span class="d" id="h-loan-d"></span></div>
+    <div><span class="eyebrow">Rata</span><span class="v num" id="h-pay"></span><span class="d" id="h-pay-d"></span></div>
+    <div><span class="eyebrow">Contanti</span><span class="v num" id="h-cash"></span><span class="d" id="h-cash-d"></span></div>
+  </div>
+  <div class="profile" aria-label="Cosa guarda la banca">
+    <span class="chip"><i></i>Contratto stabile</span>
+    <span class="chip"><i></i>Nessun altro debito</span>
+    <span class="chip"><i></i>CRIF pulito</span>
+    <span class="chip"><i></i>Risparmi per anticipo e spese</span>
+    <span class="chip w"><i></i>Rata entro il 33–36% del netto</span>
+    <span class="chip w"><i></i>Mutuo entro l'80% del valore</span>
+    <span class="chip b"><i></i>Entrate non documentate non contano</span>
+  </div>
+</header>
+
+<section id="simulatore">
+  <div class="eyebrow">Simulatore</div>
+  <h2>Prova i tuoi numeri</h2>
+  <p class="lead">Muovi i cursori: vedi subito la rata, quanto ti resta dei risparmi e la probabilità che la banca approvi. Tutto il resto della pagina si aggiorna con questi valori.</p>
+  <div class="sim">
+    <div class="panel" aria-label="Parametri">
+      <div class="ctl"><div class="row"><label for="inc">Stipendio netto mensile</label><output id="o-inc" class="num"></output></div>
+        <input type="range" id="inc" min="1200" max="5000" step="25" value="2000">
+        <span class="hint">Calcolato su 13 mensilità, come fanno molte banche. Somma i redditi se il mutuo è cointestato.</span></div>
+      <div class="ctl"><div class="row"><label for="sav">Risparmi disponibili</label><output id="o-sav" class="num"></output></div>
+        <input type="range" id="sav" min="10000" max="150000" step="1000" value="65000"></div>
+      <div class="ctl"><div class="row"><label for="price">Prezzo della casa</label><output id="o-price" class="num"></output></div>
+        <input type="range" id="price" min="100000" max="400000" step="1000" value="190000"></div>
+      <div class="ctl"><div class="row"><label for="down">Anticipo di tasca tua</label><output id="o-down" class="num"></output></div>
+        <input type="range" id="down" min="0" max="65000" step="500" value="38000">
+        <span class="hint">Spese accessorie escluse: quelle si aggiungono sotto.</span></div>
+      <div class="ctl"><div class="row"><label for="rate">Tasso fisso (TAN)</label><output id="o-rate" class="num"></output></div>
+        <input type="range" id="rate" min="2.5" max="4.5" step="0.05" value="3.3">
+        <span class="hint">~3,0% per case in classe A/B (green), ~3,3–3,7% per le classi C–G.</span></div>
+      <div class="ctl"><label>Durata</label>
+        <div class="seg" id="dur"><button type="button" data-v="20" aria-pressed="false">20 anni</button><button type="button" data-v="25" aria-pressed="false">25 anni</button><button type="button" data-v="30" aria-pressed="true">30 anni</button></div></div>
+      <div class="ctl"><label>Da chi compri</label>
+        <div class="seg" id="seller"><button type="button" data-v="ag" aria-pressed="true">Privato con agenzia</button><button type="button" data-v="pr" aria-pressed="false">Privato senza agenzia</button><button type="button" data-v="co" aria-pressed="false">Costruttore</button></div></div>
+      <div class="ctl"><div class="row"><label for="extra">Estinzione anticipata ogni mese</label><output id="o-extra" class="num"></output></div>
+        <input type="range" id="extra" min="0" max="500" step="25" value="200">
+        <span class="hint">Una somma messa da parte ogni mese e versata sul mutuo una volta l'anno.</span></div>
+      <label class="check"><input type="checkbox" id="isee"> <span>Ho meno di 36 anni e ISEE sotto 40.000 € (garanzia Consap all'80%, mutuo oltre l'80% del valore)</span></label>
+    </div>
+
+    <div class="panel" aria-live="polite">
+      <div class="status" id="status"><span class="dot"></span><div><b id="st-t"></b><p class="small" id="st-d"></p></div></div>
+      <div class="kpis">
+        <div class="kpi"><span class="l">Mutuo</span><span class="v num" id="k-loan"></span></div>
+        <div class="kpi"><span class="l">Rata mensile</span><span class="v num" id="k-pay"></span></div>
+        <div class="kpi"><span class="l">Mutuo / valore (LTV)</span><span class="v num" id="k-ltv"></span></div>
+        <div class="kpi"><span class="l">Spese accessorie</span><span class="v num" id="k-fees"></span></div>
+        <div class="kpi"><span class="l">Contanti totali</span><span class="v num" id="k-cash"></span></div>
+        <div class="kpi"><span class="l">Ti restano dei risparmi</span><span class="v num" id="k-left"></span></div>
+      </div>
+      <div class="gauge">
+        <div class="row"><span class="small"><b>Rata / reddito</b></span><span class="num small" id="g-val"></span></div>
+        <div class="gbar"><div class="gmark" id="g-mark"></div></div>
+        <div class="gscale"><span>0%</span><span>33%</span><span>40%</span><span>60%</span></div>
+      </div>
+      <div class="gauge">
+        <span class="small"><b>Da dove arrivano i soldi per comprare</b></span>
+        <div class="stack" id="stack"></div>
+        <div class="legend" id="stack-l"></div>
+      </div>
+      <div class="maxbox">
+        <span class="eyebrow">Con questi parametri</span>
+        <p>Il prezzo massimo che ti approvano con buona probabilità è <b class="num" id="maxp"></b>. Rata entro il 36% del reddito, LTV entro <span id="maxltv">80%</span>, almeno 7.000 € di riserva.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:baseline">
+      <h3>Debito residuo nel tempo</h3>
+      <div class="legend"><span><i style="background:var(--muted)"></i>Solo la rata</span><span><i style="background:var(--accent)"></i>Rata + estinzione anticipata</span></div>
+    </div>
+    <div class="chartbox"><svg id="amort" width="100%" role="img" aria-label="Grafico del debito residuo"></svg></div>
+    <p class="small" id="amort-t"></p>
+  </div>
+</section>
+
+<section id="scenari">
+  <div class="eyebrow">Tre scenari</div>
+  <h2>Minimo, giusto, massimo</h2>
+  <p class="lead">Calcolati su stipendio, risparmi, tasso e durata del simulatore, con mutuo entro l'80% del valore. Tocca uno scenario per caricarlo nel simulatore.</p>
+  <div class="scen" id="scen"></div>
+  <div class="callout warn">
+    <b>E se vuoi una casa più cara?</b>
+    <p class="small">Il limite quasi sempre è il reddito documentato, non l'anticipo. A 30 anni e al 3,3%, ogni 100 € di rata in più valgono circa 23.000 € di mutuo, e servono circa 280 € di netto mensile in più per ottenerli. Aiuti familiari informali non contano per la banca: per salire davvero serve un co-intestatario con un reddito suo.</p>
+  </div>
+</section>
+
+<section id="spese">
+  <div class="eyebrow">Costi oltre al prezzo</div>
+  <h2>Dove vanno i <span class="num" id="fee-h"></span> di spese</h2>
+  <p class="lead">Calcolate sul prezzo e sul mutuo che hai impostato nel simulatore. Cambia "Da chi compri" per confrontare i tre casi.</p>
+  <div class="two">
+    <div class="tbl"><table id="fee-t"><thead><tr><th>Voce</th><th class="r">Importo</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+    <div class="panel">
+      <h3>Confronto fra i tre tipi di acquisto</h3>
+      <div class="chartbox"><svg id="fee-c" width="100%" role="img" aria-label="Confronto spese"></svg></div>
+      <p class="small muted">Dal costruttore paghi più tasse (IVA 4%), ma di solito niente agenzia, e la casa nuova è spesso in classe A/B: questo dà accesso ai mutui green, con un tasso più basso di 0,4–0,5 punti.</p>
+    </div>
+  </div>
+</section>
+
+<section id="zone">
+  <div class="eyebrow">Roma nord · prezzi richiesti a settembre 2026</div>
+  <h2>Cosa compri nelle zone di Roma nord</h2>
+  <p class="lead">Metri quadri che ottieni con il prezzo del simulatore (<b class="num" id="z-price"></b>). Le chiusure reali sono di solito il 5–10% sotto il prezzo richiesto.</p>
+  <div class="panel">
+    <div class="chartbox"><svg id="zone-c" width="100%" role="img" aria-label="Prezzo al metro quadro per zona"></svg></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>€/mq richiesti</span><span><i style="background:var(--ochre)"></i>Stima (Colle Salario non è censito a parte)</span></div>
+    <p class="small muted">Fonte: Immobiliare.it. Colle Salario è stimato tra Fidene e Settebagni. Per i valori reali delle compravendite usa le quotazioni OMI dell'Agenzia delle Entrate.</p>
+  </div>
+</section>
+
+<section id="tasso">
+  <div class="eyebrow">Tasso fisso o variabile</div>
+  <h2>Oggi conviene il fisso</h2>
+  <div class="two">
+    <div class="panel">
+      <h3>Rata sul tuo mutuo: fisso o variabile se l'Euribor sale</h3>
+      <div class="chartbox"><svg id="var-c" width="100%" role="img" aria-label="Confronto fisso e variabile"></svg></div>
+      <p class="small muted">Fisso al 3,0% (miglior green), variabile che parte dal 2,6% (Euribor 1M + 0,10%) e poi sale. La linea tratteggiata è la rata massima approvabile con lo stipendio del simulatore.</p>
+    </div>
+    <div class="panel">
+      <h3>Perché il fisso, adesso</h3>
+      <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:8px">
+        <li><b>La BCE sta alzando i tassi.</b> Ci sono stati due rialzi nel 2026 (giugno e settembre), il tasso è al 2,65% e un nuovo rialzo a dicembre è possibile.</li>
+        <li><b>La differenza è minima.</b> I migliori fissi sono al 2,80–3,05%, i migliori variabili al 2,44–2,60%.</li>
+        <li><b>Se la rata è vicina al limite,</b> con un punto di Euribor in più quella variabile supera ciò che la banca approva e che il tuo bilancio regge.</li>
+        <li><b>Se i tassi scendono, cambi banca.</b> La surroga è gratuita per legge.</li>
+      </ul>
+      <div class="tbl"><table><thead><tr><th>Indice al 12/10/2026</th><th class="r">Valore</th></tr></thead><tbody>
+        <tr><td>Euribor 1 mese</td><td class="r num">2,44%</td></tr>
+        <tr><td>Euribor 3 mesi</td><td class="r num">2,63%</td></tr>
+        <tr><td>IRS 30 anni (riferimento del fisso)</td><td class="r num">3,48%</td></tr>
+        <tr><td>Tasso medio ABI, agosto 2026</td><td class="r num">3,56%</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section id="banche">
+  <div class="eyebrow">Offerte di ottobre 2026</div>
+  <h2>Le banche, in ordine di probabilità di approvazione</h2>
+  <p class="lead">La colonna "Rata" è calcolata sul mutuo che hai impostato nel simulatore. Quasi tutti i tassi migliori valgono solo per case in classe A/B: per le classi C–G conta circa 0,3–0,6 punti in più.</p>
+  <div class="filters">
+    <div class="seg" id="f-type"><button type="button" data-v="all" aria-pressed="true">Tutti</button><button type="button" data-v="fisso" aria-pressed="false">Solo fisso</button><button type="button" data-v="variabile" aria-pressed="false">Solo variabile</button></div>
+    <div class="seg" id="f-sort"><button type="button" data-v="prob" aria-pressed="true">Ordina per probabilità</button><button type="button" data-v="taeg" aria-pressed="false">Ordina per TAEG</button></div>
+    <label class="check"><input type="checkbox" id="f-c"> <span>La casa è in classe C–G (stima del tasso +0,4)</span></label>
+  </div>
+  <div class="banks" id="banks"></div>
+  <div class="panel">
+    <h3>Comparatori e broker gratuiti</h3>
+    <p class="small muted">Con una sola richiesta ricevi preventivi da più banche. MutuiOnline e MutuiSupermarket seguono anche la pratica come broker: utile se la rata è vicina al limite, perché sanno quali banche accettano un rapporto rata/reddito più alto.</p>
+    <div class="legend" style="gap:8px 18px">
+      <a href="https://www.mutuionline.it/mutuo-migliore/miglior-mutuo-tasso-fisso.asp" target="_blank" rel="noopener">MutuiOnline</a>
+      <a href="https://mutui.segugio.it/news-mutui/le-migliori-offerte-di-mutuo-prima-casa-a-ottobre-2026-00048276.asp" target="_blank" rel="noopener">Segugio – prima casa</a>
+      <a href="https://www.segugio.it/news-mutui/le-migliori-offerte-di-mutuo-giovani-a-ottobre-2026-00048279.asp" target="_blank" rel="noopener">Segugio – giovani</a>
+      <a href="https://www.mutui.it/news/mutui-online-offerte-ottobre-2026.html" target="_blank" rel="noopener">Mutui.it – simulazione 155k su 195k</a>
+      <a href="https://www.facile.it/mutui/news/offerte-mutui-ottobre-2026-fisso-variabile.html" target="_blank" rel="noopener">Facile.it</a>
+      <a href="https://www.mutuisupermarket.it/" target="_blank" rel="noopener">MutuiSupermarket</a>
+    </div>
+  </div>
+</section>
+
+<section id="piano">
+  <div class="eyebrow">Piano d'azione</div>
+  <h2>Cosa fare, in ordine</h2>
+  <p class="lead">Spunta i passi man mano che li completi: la pagina se li ricorda su questo dispositivo.</p>
+  <div class="progress"><div id="prog"></div></div>
+  <p class="small muted" id="prog-t"></p>
+  <div id="steps" style="display:grid;gap:22px"></div>
+</section>
+
+<section id="documenti">
+  <div class="eyebrow">Da preparare</div>
+  <h2>Documenti per la banca</h2>
+  <div class="docs">
+    <div class="panel"><h3>Tuoi</h3><ul>
+      <li>Carta d'identità <b>elettronica</b> (da agosto 2026 quella cartacea non è più accettata)</li>
+      <li>Codice fiscale, certificato di stato civile e residenza</li>
+      <li>Ultime 3 buste paga e ultime 2 CU</li>
+      <li>Contratto di lavoro o dichiarazione di anzianità</li>
+      <li>Estratti conto degli ultimi 6 mesi</li>
+      <li>ISEE in corso di validità</li>
+      <li>Bonifico tracciato per eventuali donazioni dalla famiglia</li>
+    </ul></div>
+    <div class="panel"><h3>Dell'eventuale garante</h3><ul>
+      <li>Documento d'identità e codice fiscale</li>
+      <li>Ultime 3 buste paga o cedolini della pensione</li>
+      <li>Ultima CU</li>
+    </ul></div>
+    <div class="panel"><h3>Della casa</h3><ul>
+      <li>Proposta d'acquisto accettata o preliminare</li>
+      <li>Atto di provenienza</li>
+      <li>Visura e planimetria catastale</li>
+      <li><b>APE</b> (classe energetica): decide se ottieni il mutuo green</li>
+      <li>Conformità urbanistica e catastale</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="fonti">
+  <div class="eyebrow">Fonti consultate il 14/10/2026</div>
+  <h2>Fonti</h2>
+  <ul class="sources">
+    <li><a href="https://www.mutuionline.it/mutuo-migliore/miglior-mutuo-tasso-fisso.asp" target="_blank" rel="noopener">MutuiOnline – migliori mutui a tasso fisso</a></li>
+    <li><a href="https://www.mutuionline.it/news/mutui-a-tasso-fisso-da-3-29-con-credit-agricole-italia-a-ottobre-2026-00048288.asp" target="_blank" rel="noopener">MutuiOnline – Crédit Agricole, ottobre 2026</a></li>
+    <li><a href="https://www.mutuionline.it/news/aggiornamento-tassi/00048364-aggiornamento-tassi-lunedi-12-ottobre-2026.asp" target="_blank" rel="noopener">MutuiOnline – Euribor e IRS al 12/10/2026</a></li>
+    <li><a href="https://mutui.segugio.it/news-mutui/le-migliori-offerte-di-mutuo-prima-casa-a-ottobre-2026-00048276.asp" target="_blank" rel="noopener">Segugio – mutui prima casa, ottobre 2026</a></li>
+    <li><a href="https://www.segugio.it/news-mutui/le-migliori-offerte-di-mutuo-giovani-a-ottobre-2026-00048279.asp" target="_blank" rel="noopener">Segugio – mutui giovani, ottobre 2026</a></li>
+    <li><a href="https://www.mutui.it/news/mutui-under-36-ottobre-2026.html" target="_blank" rel="noopener">Mutui.it – under 36, ottobre 2026</a></li>
+    <li><a href="https://www.mutui.it/news/mutui-online-offerte-ottobre-2026.html" target="_blank" rel="noopener">Mutui.it – mutui online, ottobre 2026</a></li>
+    <li><a href="https://www.facile.it/mutui/news/offerte-mutui-ottobre-2026-fisso-variabile.html" target="_blank" rel="noopener">Facile.it – fisso e variabile, ottobre 2026</a></li>
+    <li><a href="https://www.bper.it/privati/mutui/mutuo-tasso-variabile-tasso-fisso" target="_blank" rel="noopener">BPER – mutui</a></li>
+    <li><a href="https://www.consap.it/fondo-prima-casa/" target="_blank" rel="noopener">Consap – Fondo garanzia prima casa</a></li>
+    <li><a href="https://notaionline.it/guida/mutuo-prima-casa-under-36-agevolazioni/" target="_blank" rel="noopener">Notaionline – mutuo under 36 nel 2026</a></li>
+    <li><a href="https://www.immobiliare.it/mercato-immobiliare/lazio/roma/porta-di-roma-casal-boccone/" target="_blank" rel="noopener">Immobiliare.it – Porta di Roma, Casal Boccone</a></li>
+    <li><a href="https://www.immobiliare.it/mercato-immobiliare/lazio/roma/bufalotta-casal-monastero/" target="_blank" rel="noopener">Immobiliare.it – Bufalotta, Settebagni</a></li>
+    <li><a href="https://www1.agenziaentrate.gov.it/servizi/geopoi_omi/index.php" target="_blank" rel="noopener">Agenzia delle Entrate – quotazioni OMI</a></li>
+  </ul>
+  <footer>
+    <p>Questa pagina non è consulenza finanziaria. Le cifre sono simulazioni basate su dati pubblici di ottobre 2026: il preventivo vincolante è il PIES della banca. Prima di firmare verifica tutto con la banca o con un mediatore creditizio iscritto all'OAM.</p>
+  </footer>
+</section>
+
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const eur=n=>Math.round(n).toLocaleString('it-IT')+' €';
+const k=n=>(Math.round(n/1000)).toLocaleString('it-IT')+'k €';
+const pct=(n,d=1)=>n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const CUSHION=7000;
+
+const st={dur:30,seller:'ag'};
+function pay(cap,tan,years){const i=tan/1200,n=years*12;if(cap<=0)return 0;return cap*i/(1-Math.pow(1+i,-n));}
+function capFor(rata,tan,years){const i=tan/1200,n=years*12;return rata*(1-Math.pow(1+i,-n))/i;}
+function fees(P,M,seller){
+  const L=[];
+  if(seller==='co'){
+    L.push(['IVA 4% (prima casa da impresa)',0.04*P]);
+    L.push(['Registro + ipotecaria + catastale fisse',600]);
+  }else{
+    L.push(['Imposta di registro 2% sul valore catastale',Math.max(1000,0.0105*P)]);
+    L.push(['Imposte ipotecaria + catastale',100]);
+  }
+  L.push(['Notaio compravendita',3000]);
+  if(M>0){L.push(['Notaio mutuo',2100]);L.push(['Istruttoria + perizia',1000]);L.push(['Imposta sostitutiva 0,25%',0.0025*M]);L.push(['Polizza incendio-scoppio',300]);}
+  if(seller==='ag')L.push(['Agenzia (3% + IVA)',0.0366*P]);
+  return L;
+}
+const sum=L=>L.reduce((a,b)=>a+b[1],0);
+function income(){return +$('inc').value*13/12;}
+function savings(){return +$('sav').value;}
+
+function calc(P,D,tan,years,seller){
+  const M=Math.max(0,P-D);
+  const F=sum(fees(P,M,seller));
+  const R=pay(M,tan,years);
+  const ratio=R/income()*100;
+  return {P,D,M,F,R,ratio,ltv:M/P*100,cash:D+F,left:savings()-D-F};
+}
+// prezzo più alto con rata entro ratioMax, LTV entro ltvMax e almeno `cushion` di riserva
+function bestFor(tan,years,seller,ltvMax,ratioMax,cushion){
+  const mcap=capFor(income()*ratioMax,tan,years);
+  let best=null;
+  for(let P=60000;P<=600000;P+=1000){
+    const M=Math.min(ltvMax*P,mcap), D=Math.ceil((P-M)/500)*500, F=sum(fees(P,P-D,seller));
+    if(D+F<=savings()-cushion)best={P,D};
+  }
+  return best;
+}
+function maxPrice(tan,years,seller,ltvMax){const b=bestFor(tan,years,seller,ltvMax,0.36,CUSHION);return b?b.P:0;}
+function verdict(c,ltvMax){
+  if(c.left<0)return['b','Non ti bastano i risparmi','Ti mancano '+eur(-c.left)+'. Riduci il prezzo o metti meno anticipo.'];
+  if(c.ltv>ltvMax*100+0.01)return['b','Mutuo troppo alto rispetto al valore','LTV '+pct(c.ltv)+': senza garanzia Consap all’80% le banche finanziano al massimo l’80%. Aumenta l’anticipo.'];
+  if(c.ratio>40)return['b','Probabilità bassa','La rata supera il 40% del reddito: quasi nessuna banca la approva.'];
+  if(c.left<CUSHION)return['w','Fattibile, ma senza riserva','Ti restano solo '+eur(c.left)+': tieni da parte almeno 7–10k € per le emergenze.'];
+  if(c.ratio>36)return['w','Probabilità media','Rata tra il 36% e il 40% del reddito: la approvano solo alcune banche, meglio con un garante.'];
+  if(c.ratio>33)return['ok','Probabilità alta','Rata entro il 36%: profilo standard per un dipendente a tempo indeterminato.'];
+  return['ok','Probabilità molto alta','Rata sotto il 33% del reddito e riserva sufficiente.'];
+}
+
+function svgEl(tag,a,txt){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const x in a)e.setAttribute(x,a[x]);if(txt!=null)e.textContent=txt;return e;}
+// i grafici usano la larghezza reale del contenitore, così il testo resta leggibile anche su telefono
+function frame(s,H){const W=Math.max(280,Math.round(s.parentNode.clientWidth||720));s.setAttribute('viewBox','0 0 '+W+' '+H);s.setAttribute('height',H);s.innerHTML='';return W;}
+
+function drawAmort(c,tan,years,extra){
+  const s=$('amort'),H=240,W=frame(s,H);
+  const narrow=W<520,l=narrow?40:56,r=16,t=14,b=30,iw=W-l-r,ih=H-t-b;
+  const i=tan/1200,n=years*12,R=c.R;
+  function series(x){const pts=[[0,c.M]];let bal=c.M,m=0,int=0;
+    while(bal>0.5&&m<n){const it=bal*i;int+=it;bal=bal+it-R;m++;if(x&&m%12===0)bal-=x*12;if(bal<0)bal=0;if(m%12===0||bal===0)pts.push([m/12,bal]);}
+    return{pts,months:m,int};}
+  const A=series(0),B=series(extra);
+  const ymax=Math.ceil(c.M/50000)*50000||50000;
+  const X=v=>l+v/years*iw,Y=v=>t+ih-(v/ymax)*ih;
+  for(let v=0;v<=ymax;v+=50000){s.append(svgEl('line',{x1:l,x2:W-r,y1:Y(v),y2:Y(v),class:'gl'}));s.append(svgEl('text',{x:l-8,y:Y(v)+4,'text-anchor':'end'},v?(v/1000)+'k':'0'));}
+  const ystep=narrow?10:5;
+  for(let y=0;y<=years;y+=ystep)s.append(svgEl('text',{x:X(y),y:H-10,'text-anchor':y===0?'start':y===years?'end':'middle'},y===0?'oggi':'anno '+y));
+  const path=p=>p.map((q,j)=>(j?'L':'M')+X(q[0]).toFixed(1)+' '+Y(q[1]).toFixed(1)).join(' ');
+  if(extra>0&&c.M>0){
+    s.append(svgEl('path',{d:path(B.pts)+' L'+X(B.pts[B.pts.length-1][0])+' '+Y(0)+' L'+X(0)+' '+Y(0)+' Z',fill:'var(--accent-soft)',stroke:'none'}));
+  }
+  s.append(svgEl('path',{d:path(A.pts),fill:'none',stroke:'var(--muted)','stroke-width':2,'stroke-dasharray':'5 4'}));
+  if(extra>0&&c.M>0){
+    s.append(svgEl('path',{d:path(B.pts),fill:'none',stroke:'var(--accent)','stroke-width':2.5}));
+    const ey=B.months/12;s.append(svgEl('circle',{cx:X(ey),cy:Y(0),r:5,fill:'var(--accent)'}));
+    s.append(svgEl('text',{x:Math.max(l+60,Math.min(X(ey),W-r-60)),y:Y(0)-10,'text-anchor':'middle',style:'fill:var(--accent);font-weight:500'},'chiuso in '+ey.toLocaleString('it-IT',{maximumFractionDigits:1})+' anni'));
+  }
+  const saved=A.int-B.int;
+  $('amort-t').innerHTML=c.M<=0?'Nessun mutuo con questi parametri.':extra>0
+    ?'Solo con la rata paghi <b class="num">'+eur(A.int)+'</b> di interessi in '+years+' anni. Versando anche '+eur(extra)+' al mese chiudi in <b>'+(B.months/12).toLocaleString('it-IT',{maximumFractionDigits:1})+' anni</b> e risparmi <b class="num">'+eur(saved)+'</b>. Per la prima casa non ci sono penali: chiedi di ridurre la durata, non la rata.'
+    :'Interessi totali: <b class="num">'+eur(A.int)+'</b> in '+years+' anni.';
+}
+
+function drawFees(P,D){
+  const s=$('fee-c');
+  const rows=[['ag','Privato con agenzia'],['pr','Privato senza agenzia'],['co','Costruttore']];
+  const vals=rows.map(([v])=>sum(fees(P,Math.max(0,P-D),v)));
+  const W0=Math.max(280,s.parentNode.clientWidth||440),narrow=W0<420;
+  const H=narrow?rows.length*54:210,W=frame(s,H);
+  const l=narrow?0:150,r=60,t=narrow?0:10,bh=narrow?22:34,gap=22;
+  const max=Math.max(...vals)*1.05;
+  rows.forEach(([v,lab],j)=>{
+    const w=(vals[j]/max)*(W-l-r);
+    const by=narrow?j*54+18:t+j*(bh+gap);
+    const lt=svgEl('text',narrow?{x:0,y:by-6}:{x:l-10,y:by+bh/2+4,'text-anchor':'end'},lab);
+    lt.setAttribute('style','fill:var(--ink);font-family:var(--f-body);font-size:12px');s.append(lt);
+    s.append(svgEl('rect',{x:l,y:by,width:w,height:bh,rx:4,fill:v===st.seller?'var(--accent)':'var(--surface-2)'}));
+    s.append(svgEl('text',{x:l+w+6,y:by+bh/2+4,style:'fill:var(--ink)'},k(vals[j])));
+  });
+}
+
+const ZONES=[['Porta di Roma',4339],['Casal Boccone',4002],['Bufalotta',3214],['Fidene',3056],['Colle Salario (stima)',3050,1],['Settebagni',2956],['Serpentara',2870]];
+const sizeLab=mq=>mq<55?'bilocale':mq<70?'bilocale grande':mq<95?'trilocale':'quadrilocale';
+function drawZones(P){
+  const s=$('zone-c'),max=4600;
+  const W0=Math.max(280,s.parentNode.clientWidth||720),narrow=W0<560;
+  if(narrow){
+    const rh=52,t=24,H=t+ZONES.length*rh,W=frame(s,H);
+    s.append(svgEl('text',{x:0,y:12},'€/mq richiesti'));
+    s.append(svgEl('text',{x:W,y:12,'text-anchor':'end'},'mq con '+k(P)));
+    ZONES.forEach(([n,v,est],j)=>{const y=t+j*rh,mq=P/v,w=v/max*(W-80);
+      s.append(svgEl('text',{x:0,y:y+14,style:'fill:var(--ink);font-family:var(--f-body);font-size:13px'},n));
+      s.append(svgEl('text',{x:W,y:y+14,'text-anchor':'end',style:'fill:var(--ink);font-weight:500'},Math.round(mq)+' mq · '+sizeLab(mq)));
+      s.append(svgEl('rect',{x:0,y:y+22,width:w,height:16,rx:4,fill:est?'var(--ochre)':'var(--accent)',opacity:est?1:.85}));
+      s.append(svgEl('text',{x:w+6,y:y+34},v.toLocaleString('it-IT')+' €'));
+    });
+    return;
+  }
+  const H=330,W=frame(s,H),l=170,r=170,t=24,bh=28,gap=14;
+  s.append(svgEl('text',{x:l,y:12},'€/mq richiesti'));
+  s.append(svgEl('text',{x:W-10,y:12,'text-anchor':'end'},'mq con '+k(P)));
+  ZONES.forEach(([n,v,est],j)=>{const y=t+j*(bh+gap),w=v/max*(W-l-r);const mq=P/v;
+    s.append(svgEl('text',{x:l-10,y:y+bh/2+4,'text-anchor':'end',style:'fill:var(--ink);font-family:var(--f-body);font-size:12.5px'},n));
+    s.append(svgEl('rect',{x:l,y,width:w,height:bh,rx:4,fill:est?'var(--ochre)':'var(--accent)',opacity:est?1:.85}));
+    s.append(svgEl('text',{x:l+w+6,y:y+bh/2+4},v.toLocaleString('it-IT')+' €'));
+    s.append(svgEl('text',{x:W-10,y:y+bh/2+4,'text-anchor':'end',style:'fill:var(--ink);font-weight:500'},Math.round(mq)+' mq · '+sizeLab(mq)));
+  });
+}
+
+function drawVar(M){
+  const s=$('var-c'),H=250,W=frame(s,H);
+  const l=46,r=10,t=30,b=44,iw=W-l-r,ih=H-t-b;
+  const bars=[[['Fisso','3,0%'],pay(M,3.0,30),'var(--accent)'],[['Variabile','oggi 2,6%'],pay(M,2.6,30),'var(--ochre)'],[['Euribor +1','→ 3,6%'],pay(M,3.6,30),'var(--ochre)'],[['Euribor +2','→ 4,6%'],pay(M,4.6,30),'var(--bad)']];
+  const lim=income()*0.36, ymax=Math.max(1000,Math.ceil(Math.max(...bars.map(b=>b[1]),lim)/200)*200);
+  const ystep=ymax>2000?500:200;
+  const Y=v=>t+ih-v/ymax*ih;
+  for(let v=0;v<=ymax;v+=ystep){s.append(svgEl('line',{x1:l,x2:W-r,y1:Y(v),y2:Y(v),class:'gl'}));s.append(svgEl('text',{x:l-6,y:Y(v)+4,'text-anchor':'end'},v));}
+  const bw=iw/bars.length;
+  bars.forEach(([lab,v,c],j)=>{const x=l+j*bw+bw*0.18,w=bw*0.64;
+    s.append(svgEl('rect',{x,y:Y(v),width:w,height:Y(0)-Y(v),rx:4,fill:c}));
+    s.append(svgEl('text',{x:x+w/2,y:Y(v)-6,'text-anchor':'middle',style:'fill:var(--ink);font-weight:500'},Math.round(v)+' €'));
+    s.append(svgEl('text',{x:x+w/2,y:H-24,'text-anchor':'middle',style:'font-size:10px'},lab[0]));
+    s.append(svgEl('text',{x:x+w/2,y:H-10,'text-anchor':'middle',style:'font-size:10px'},lab[1]));
+  });
+  s.append(svgEl('line',{x1:l,x2:W-r,y1:Y(lim),y2:Y(lim),stroke:'var(--ink)','stroke-dasharray':'4 4','stroke-width':1.5}));
+  s.append(svgEl('line',{x1:l,x2:l+22,y1:8,y2:8,stroke:'var(--ink)','stroke-dasharray':'4 4','stroke-width':1.5}));
+  s.append(svgEl('text',{x:l+28,y:12,style:'fill:var(--ink)'},'limite banca ~'+Math.round(lim)+' €/mese'));
+}
+
+const BANKS=[
+ {n:'BPER Banca',p:'Mutuo Promo Casa Green',t:'fisso',tan:3.05,taeg:3.25,green:true,prob:3,pl:'Molto alta',why:'Promo green con rete capillare: se sei già cliente parti avvantaggiato',
+  pts:['Istruttoria 0,5% (~775 € su 155k €), perizia 350 €','Promo fino al 17/10/2026 o a esaurimento del plafond: chiedi se la rinnovano','Non green: tasso fisso promo 3,50%, TAEG ~3,87%','Porta in filiale i preventivi delle altre banche e chiedi di pareggiarli'],
+  links:[['Mutuo fisso e variabile','https://www.bper.it/privati/mutui/mutuo-tasso-variabile-tasso-fisso'],['Mutuo Green','https://www.bper.it/privati/mutui/mutuo-green'],['Under 36 / 100%','https://www.bper.it/privati/mutui/mutuo-100-prima-casa'],['Calcola la rata','https://www.bper.it/privati/mutui/mutuo-tasso-variabile-tasso-fisso/calcola-rata']]},
+ {n:'Crédit Agricole Italia',p:'Mutuo CA Flexi',t:'fisso',tan:2.99,taeg:3.24,green:true,prob:3,pl:'Alta',why:'Spese iniziali basse e buona presenza a Roma',
+  pts:['Istruttoria e perizia a 0 per case in classe A/B','Puoi cambiare tasso fino a 4 volte, saltare una rata o variarne l’importo dall’app','Il tasso green migliore può essere legato a una polizza vita: chiedi il TAEG con e senza','Numero verde 800 771 100'],
+  links:[['Sito Crédit Agricole','https://www.credit-agricole.it/'],['Analisi MutuiOnline','https://www.mutuionline.it/news/mutui-a-tasso-fisso-da-3-29-con-credit-agricole-italia-a-ottobre-2026-00048288.asp']]},
+ {n:'Banco BPM',p:'Mutuo Casa Tasso Fisso Finito Green',t:'fisso',tan:2.95,taeg:3.21,green:true,prob:3,pl:'Alta',why:'Grande rete a Roma, LTV fino all’80%',
+  pts:['Istruttoria 800–1.000 €, perizia 320 €','Lo sconto di 0,40 punti per la classe A/B è già incluso','Mutuo minimo 50.000 €, durata da 10 a 30 anni'],
+  links:[['Mutui Banco BPM','https://www.bancobpm.it/privati/mutui/']]},
+ {n:'BdM Banca',p:'Mutuo Consap Tasso Fisso',t:'fisso',tan:2.80,taeg:3.06,green:true,prob:2,pl:'Buona',why:'Il fisso più basso del mese, con garanzia Consap al 50%',
+  pts:['La garanzia standard al 50% non ha limiti di ISEE','Istruttoria 1% (~1.600 €), perizia 300 €','Consap risponde in circa 20 giorni lavorativi','Verifica se il 2,80% vale anche per le classi C–G. Poche filiali, la pratica è più online'],
+  links:[['Sito BdM Banca','https://www.bdmbanca.it/'],['Confronto Facile.it','https://www.facile.it/mutui/news/offerte-mutui-ottobre-2026-fisso-variabile.html'],['Consap – Fondo prima casa','https://www.consap.it/fondo-prima-casa/']]},
+ {n:'Banco di Desio',p:'D-Evolution Green',t:'fisso',tan:3.00,taeg:3.16,green:true,prob:2,pl:'Buona',why:'Il TAEG più basso come costo totale',
+  pts:['Istruttoria 250 €, perizia ~238 €','Per case in classe B o superiore, fino all’80% del valore','Poche filiali nel Lazio: pratica online o tramite comparatore'],
+  links:[['Sito Banco Desio','https://www.bancodesio.it/']]},
+ {n:'Credem',p:'Offerta Mutuo Casa Green',t:'fisso',tan:3.19,taeg:3.44,green:true,prob:2,pl:'Buona',why:'Istruttoria a zero',
+  pts:['Tasso = IRS 30 anni + 0,31%, fissato al momento della stipula','Solo la perizia da 300 €'],
+  links:[['Sito Credem','https://www.credem.it/']]},
+ {n:'Intesa Sanpaolo',p:'XME Mutuo Acquisto Variabile',t:'variabile',tan:2.60,taeg:2.90,green:true,prob:1,pl:'Sconsigliato',why:'Variabile: la rata sale se sale l’Euribor',
+  pts:['Euribor 1M + 0,10%, offerta valida fino al 31/10/2026','Istruttoria 750 €, perizia 320 €','Utile come preventivo di confronto anche per il fisso: è la rete più grande di Roma'],
+  links:[['Mutui Intesa Sanpaolo','https://www.intesasanpaolo.com/it/persone-e-famiglie/prodotti/mutui.html']]},
+ {n:'Monte dei Paschi',p:'MPS Mio Acquisto Abitazione',t:'variabile',tan:2.44,taeg:2.70,green:true,prob:1,pl:'Sconsigliato',why:'Variabile green, durata fino a 40 anni',
+  pts:['Euribor 1M + 0%, istruttoria gratuita, perizia ~220 €','Fino all’80% del valore cauzionale'],
+  links:[['Sito MPS','https://www.mps.it/']]}
+];
+const f={type:'all',sort:'prob'};
+function drawBanks(M){
+  const box=$('banks');box.innerHTML='';
+  const bump=$('f-c').checked?0.4:0;
+  let list=BANKS.filter(b=>f.type==='all'||b.t===f.type);
+  list=list.slice().sort((a,b)=>f.sort==='taeg'?a.taeg-b.taeg:(b.prob-a.prob)||(a.taeg-b.taeg));
+  list.forEach((b,j)=>{
+    const tan=b.tan+(b.green?bump:0), taeg=b.taeg+(b.green?bump:0);
+    const cls=b.prob===3?'b-ok':b.prob===2?'b-w':'b-o';
+    const el=document.createElement('article');el.className='bank';
+    el.innerHTML='<div style="display:grid;gap:6px;min-width:0"><div class="head"><span class="rank">'+String(j+1).padStart(2,'0')+'</span><h3>'+b.n+'</h3><span class="badge '+cls+'">Probabilità: '+b.pl+'</span><span class="badge b-g">'+(b.t==='fisso'?'Fisso':'Variabile')+'</span>'+(b.green?'<span class="badge b-g">Green A/B</span>':'')+'</div><p class="small"><b>'+b.p+'</b> · '+b.why+'</p></div>'
+      +'<div class="figs"><div><span class="v num">'+pct(tan,2)+'</span><span class="l">TAN'+(bump&&b.green?' stimato':'')+'</span></div><div><span class="v num">'+pct(taeg,2)+'</span><span class="l">TAEG</span></div><div><span class="v num">'+(M>0?Math.round(pay(M,tan,st.dur))+' €':'—')+'</span><span class="l">Rata su '+k(M)+'</span></div></div>'
+      +'<ul>'+b.pts.map(x=>'<li>'+x+'</li>').join('')+'</ul>'
+      +'<div class="links">'+b.links.map(([t,u])=>'<a href="'+u+'" target="_blank" rel="noopener">'+t+' ↗</a>').join('')+'</div>';
+    box.append(el);
+  });
+}
+
+// scenari calcolati sui dati del simulatore: rapporto rata/reddito e riserva diversi
+const SCEN=[
+  {n:'Prudente',tag:'Il minimo',cls:'b-ok',ratio:0.30,cush:15000,d:'Massima tranquillità, riserva ampia'},
+  {n:'Giusto',tag:'Consigliato',cls:'b-ok',ratio:0.35,cush:8000,d:'Equilibrio tra casa e sicurezza',rec:1},
+  {n:'Massimo',tag:'Al limite',cls:'b-w',ratio:0.40,cush:3000,d:'Possibile, ma riserva quasi a zero'}
+];
+function drawScen(tan){
+  const box=$('scen');box.innerHTML='';
+  SCEN.forEach(s=>{
+    const best=bestFor(tan,st.dur,st.seller,0.8,s.ratio,s.cush);
+    const b=document.createElement('button');b.type='button';b.className='sc'+(s.rec?' rec':'');
+    if(!best){b.disabled=true;b.innerHTML='<span class="tag badge b-o">'+s.tag+'</span><span class="eyebrow">'+s.n+'</span><span class="price num">—</span><span class="small muted">Con questi risparmi non si arriva a un acquisto: servono più risparmi o più reddito.</span>';box.append(b);return;}
+    const c=calc(best.P,best.D,tan,st.dur,st.seller);
+    b.innerHTML='<span class="tag badge '+s.cls+'">'+s.tag+'</span><span class="eyebrow">'+s.n+'</span><span class="price num">'+k(c.P)+'</span><span class="small muted">'+s.d+'</span>'
+      +'<dl><dt>Mutuo</dt><dd>'+k(c.M)+'</dd><dt>Rata al '+pct(tan,2)+'</dt><dd>'+Math.round(c.R)+' €</dd><dt>Rata/reddito</dt><dd>'+pct(c.ratio,0)+'</dd><dt>Spese</dt><dd>'+k(c.F)+'</dd><dt>Contanti totali</dt><dd>'+k(c.cash)+'</dd><dt>Ti restano</dt><dd>'+k(c.left)+'</dd></dl>'
+      +'<span class="go">Carica nel simulatore →</span>';
+    b.addEventListener('click',()=>{$('price').value=best.P;$('down').max=Math.min(savings(),best.P);$('down').value=best.D;update();$('simulatore').scrollIntoView();});
+    box.append(b);
+  });
+}
+
+function setSeg(id,v){st[id]=isNaN(+v)?v:+v;document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v==String(v))));}
+['dur','seller'].forEach(id=>document.querySelectorAll('#'+id+' button').forEach(b=>b.addEventListener('click',()=>{setSeg(id,b.dataset.v);update();})));
+document.querySelectorAll('#f-type button').forEach(b=>b.addEventListener('click',()=>{f.type=b.dataset.v;document.querySelectorAll('#f-type button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));update();}));
+document.querySelectorAll('#f-sort button').forEach(b=>b.addEventListener('click',()=>{f.sort=b.dataset.v;document.querySelectorAll('#f-sort button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));update();}));
+['price','down','rate','inc','sav','extra','isee','f-c'].forEach(id=>$(id).addEventListener('input',update));
+
+function update(){
+  const P=+$('price').value, tan=+$('rate').value, extra=+$('extra').value;
+  const dEl=$('down');dEl.max=Math.min(savings(),P);if(+dEl.value>+dEl.max)dEl.value=dEl.max;const D=+dEl.value;
+  const ltvMax=$('isee').checked?1:0.8;
+  $('o-inc').textContent=eur(+$('inc').value);$('o-sav').textContent=eur(savings());
+  $('o-price').textContent=eur(P);$('o-down').textContent=eur(D)+' ('+pct(D/P*100,0)+')';
+  $('o-rate').textContent=pct(tan,2);$('o-extra').textContent=eur(extra);
+  const c=calc(P,D,tan,st.dur,st.seller);
+  const [cl,t,d]=verdict(c,ltvMax);
+  $('status').className='status'+(cl==='ok'?'':' '+cl);$('st-t').textContent=t;$('st-d').textContent=d;
+  $('k-loan').textContent=eur(c.M);$('k-pay').textContent=eur(c.R);$('k-ltv').textContent=pct(c.ltv,0);
+  $('k-fees').textContent=eur(c.F);$('k-cash').textContent=eur(c.cash);
+  $('k-left').textContent=eur(c.left);$('k-left').style.color=c.left<0?'var(--bad)':c.left<CUSHION?'var(--warn)':'';
+  $('g-val').textContent=pct(c.ratio)+' · banca considera '+eur(income())+'/mese';
+  $('g-mark').style.left=Math.min(100,c.ratio/60*100)+'%';
+  const parts=[['Mutuo',c.M,'var(--accent)'],['Anticipo',D,'var(--ochre)'],['Spese',c.F,'var(--muted)']];
+  const tot=parts.reduce((a,b)=>a+b[1],0);
+  $('stack').innerHTML=parts.map(p=>'<div style="width:'+(p[1]/tot*100)+'%;background:'+p[2]+'" title="'+p[0]+'"></div>').join('');
+  $('stack-l').innerHTML=parts.map(p=>'<span><i style="background:'+p[2]+'"></i>'+p[0]+' <b class="num">'+k(p[1])+'</b></span>').join('');
+  const mp=maxPrice(tan,st.dur,st.seller,ltvMax);
+  $('maxp').textContent=mp?eur(mp):'— (risparmi insufficienti)';$('maxltv').textContent=ltvMax===1?'100% (Consap 80%)':'80%';
+  // riepilogo in alto
+  $('h-max').textContent=mp?k(mp):'—';
+  $('h-loan').textContent=k(c.M);$('h-loan-d').textContent='Tasso '+pct(tan,2)+', '+st.dur+' anni, LTV '+pct(c.ltv,0);
+  $('h-pay').textContent=eur(c.R);$('h-pay-d').textContent='Il '+pct(c.ratio,0)+' del reddito: le banche accettano circa il 33–36%';
+  $('h-cash').textContent=k(c.cash);$('h-cash-d').textContent='Anticipo '+k(D)+' + spese '+k(c.F)+'; '+(c.left>=0?'restano '+k(c.left)+' di riserva':'mancano '+k(-c.left));
+  drawAmort(c,tan,st.dur,extra);
+  const L=fees(P,c.M,st.seller);
+  $('fee-t').querySelector('tbody').innerHTML=L.map(([n,v])=>'<tr><td>'+n+'</td><td class="r num">'+eur(v)+'</td></tr>').join('');
+  $('fee-t').querySelector('tfoot').innerHTML='<tr><td>Totale</td><td class="r num">'+eur(sum(L))+'</td></tr>';
+  $('fee-h').textContent='~'+k(sum(L));
+  drawFees(P,D);
+  $('z-price').textContent=eur(P);drawZones(P);
+  drawVar(c.M);drawBanks(c.M);drawScen(tan);
+}
+
+const PHASES=[
+ ['Subito, prima di cercare casa',[
+  ['Calcola l’ISEE preciso','Con il CAF o con l’ISEE precompilato INPS. Sotto i 36 anni e con ISEE sotto 40.000 € hai la garanzia Consap all’80% e il mutuo fino al 100%.'],
+  ['Scarica gratis i report CRIF e Centrale Rischi','<a href="https://www.crif.it/consumatori/" target="_blank" rel="noopener">CRIF consumatori ↗</a> · <a href="https://www.bancaditalia.it/servizi-cittadino/servizi/accesso-cr/index.html" target="_blank" rel="noopener">Banca d’Italia ↗</a>'],
+  ['Chiedi la prevalutazione alla tua banca + almeno 2 altre banche + 1 broker','Così conosci l’importo massimo prima di fare una proposta d’acquisto.'],
+  ['Non aprire nuovi finanziamenti','Niente auto a rate, Klarna o carte revolving fino al rogito.']]],
+ ['Mentre cerchi casa',[
+  ['Cerca entro il prezzo massimo del simulatore, più un 5–10% di margine','Il prezzo richiesto di solito scende in trattativa: puoi guardare annunci un po’ sopra il tuo budget.'],
+  ['Preferisci le case in classe A/B','Hai accesso al mutuo green, con circa 0,4–0,5 punti di tasso in meno.'],
+  ['Valuta i privati senza agenzia','Risparmi circa il 3,7% del prezzo e puoi puntare a una casa più cara.'],
+  ['Clausola "salvo concessione del mutuo"','Nella proposta d’acquisto, per l’importo del mutuo che ti serve.']]],
+ ['Dopo il rogito',[
+  ['Estinzione parziale ogni anno con i risparmi extra','Senza penali per la prima casa. Chiedi di ridurre la durata, non la rata.'],
+  ['Detrazione del 19% sugli interessi nel 730','Fino a 4.000 € di interessi all’anno, cioè ~760 € recuperati.'],
+  ['Ogni 2–3 anni confronta i tassi','Se scendono, la surroga è gratuita.']]]
+];
+const KEY='mutuo-steps-v1';let done={};try{done=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+function drawSteps(){
+  const box=$('steps');box.innerHTML='';let n=0,c=0;
+  PHASES.forEach(([title,items],pi)=>{
+    const ph=document.createElement('div');ph.className='phase';ph.innerHTML='<h3>'+title+'</h3>';
+    const ul=document.createElement('div');ul.className='steps';
+    items.forEach(([t,d],si)=>{const id='s'+pi+'_'+si;n++;if(done[id])c++;
+      const el=document.createElement('label');el.className='step'+(done[id]?' done':'');
+      el.innerHTML='<input type="checkbox" id="'+id+'" '+(done[id]?'checked':'')+'><div><b>'+t+'</b><p>'+d+'</p></div>';
+      el.querySelector('input').addEventListener('change',e=>{done[id]=e.target.checked;try{localStorage.setItem(KEY,JSON.stringify(done))}catch(_){};drawSteps();});
+      ul.append(el);});
+    ph.append(ul);box.append(ph);});
+  $('prog').style.width=(c/n*100)+'%';$('prog-t').textContent=c+' di '+n+' passi completati';
+}
+
+// evidenzia la sezione corrente nella barra e la tiene visibile se la barra scorre
+const links=[...document.querySelectorAll('nav.top a')];
+const io=('IntersectionObserver' in window)?new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>{const on=a.getAttribute('href')==='#'+e.target.id;a.classList.toggle('on',on);if(on){const bar=a.parentNode;bar.scrollTo({left:a.offsetLeft-bar.clientWidth/2+a.clientWidth/2,behavior:'smooth'});}});}})},{rootMargin:'-40% 0px -55% 0px'}):null;
+if(io)document.querySelectorAll('header.hero,section').forEach(s=>io.observe(s));
+
+// ridisegna i grafici quando cambia la larghezza (rotazione del telefono, ridimensionamento)
+let lastW=window.innerWidth,rt;
+window.addEventListener('resize',()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(update,120);});
+
+drawSteps();update();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(update);
+})();
+</script>
+</body>
+</html>
